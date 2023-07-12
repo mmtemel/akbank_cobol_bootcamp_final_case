@@ -14,7 +14,7 @@
         DEF CL ( NAME(Z95644.VSAM.AA)         -
                 FREESPACE( 20 20 )            -
                 SHR( 2,3 )                    -
-                KEYS(5 0)                     -
+                KEYS(3 0)                     -
                 INDEXED SPEED                 -
                 RECSZ(50 50)                  -
                 TRK (10 10)                   -
