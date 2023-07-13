@@ -1,11 +1,11 @@
-//FNLPRGMN JOB 1,NOTIFY=&SYSUID
+//FNLPRGWK JOB 1,NOTIFY=&SYSUID
 //***************************************************/
 //* Copyright Contributors to the COBOL Programming Course
 //* SPDX-License-Identifier: CC-BY-4.0
 //***************************************************/
 //COBRUN  EXEC IGYWCL
-//COBOL.SYSIN  DD DSN=&SYSUID..CBL(FNLPRGMN),DISP=SHR
-//LKED.SYSLMOD DD DSN=&SYSUID..LOAD(FNLPRGMN),DISP=SHR
+//COBOL.SYSIN  DD DSN=&SYSUID..CBL(FNLPRGWK),DISP=SHR
+//LKED.SYSLMOD DD DSN=&SYSUID..LOAD(FNLPRGWK),DISP=SHR
 //***************************************************/
 //DELET100  EXEC PGM=IDCAMS
 //SYSPRINT  DD SYSOUT=*
@@ -15,7 +15,7 @@
 /*
 // IF RC < 5 THEN
 //***************************************************/
-//RUN       EXEC PGM=FNLPRGMN
+//RUN       EXEC PGM=FNLPRGWK
 //STEPLIB   DD DSN=&SYSUID..LOAD,DISP=SHR
 //ACCTREC   DD DSN=&SYSUID..VSAM.AA,DISP=SHR
 //INPFILE   DD DSN=&SYSUID..QSAM.INPFILE,DISP=SHR
