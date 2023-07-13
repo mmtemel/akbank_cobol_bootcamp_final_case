@@ -1,4 +1,5 @@
        IDENTIFICATION DIVISION.
+      *SUB PROGRAM
        PROGRAM-ID.    FNLPRGSB
        AUTHOR.        Mert Musa TEMEL.
        ENVIRONMENT DIVISION.
@@ -9,90 +10,73 @@
                              ACCESS       RANDOM
                              RECORD       ACCT-KEY
                              STATUS       ACCT-ST.
-           SELECT IDX-REC    ASSIGN TO    IDXREC
-                             STATUS       IDX-ST.
-           SELECT PRINT-LINE ASSIGN TO    PRTLINE
-                             STATUS       PRT-ST.
        DATA DIVISION.
        FILE SECTION.
       *VSAM FILE
-       FD  ACCT-REC.
-      *    RECORD CONTAINS 50 CHARACTERS
+      *    RECORD CONTAINS 47 CHARACTERS
       *    DATA RECORD IS ACCT-FIELDS.
+       FD  ACCT-REC.
        01  ACCT-FIELDS.
            03 ACCT-KEY.
               05 ACCT-ID     PIC S9(05) COMP-3.
-              05 ACCT-CUR    PIC S9(03) COMP.
+           03 ACCT-CUR       PIC S9(03) COMP.
            03 ACCT-NAME      PIC X(15).
            03 ACCT-SURNAME   PIC X(15).
            03 FILLER         PIC X(12) VALUE SPACES.
-      *INDEX FILE
-       FD  IDX-REC    RECORDING MODE F.
-       01  IDX-FIELDS.
-           05 IDX-ID         PIC X(05).
-           05 IDX-CUR        PIC X(03).
-      *PRINT VARS
-       FD  PRINT-LINE RECORDING MODE F.
-       01  PRINT-REC.
-           05 PRT-ID         PIC X(05).
-           05 PRT-CUR        PIC X(03).
-           05 PRT-NAME       PIC X(15).
-           05 PRT-SURNAME    PIC X(15).
       *INTERNAL VARIABLES.
        WORKING-STORAGE SECTION.
        01  WS-WORK-AREA.
-           05 ACCT-ST     PIC 9(02).
-              88 ACCT-EOF     VALUE 10.
-              88 ACCT-SUCCESS VALUE 00
-                                    97.
-           05 IDX-ST      PIC 9(02).
-              88 IDX-EOF      VALUE 10.
-              88 IDX-SUCCESS  VALUE 00
-                                    97.
-           05 PRT-ST      PIC 9(02).
-              88 PRT-SUCCESS  VALUE 00
-                                    97.
-           05 INVALID-KEY PIC X(01).
-              88 INVL-KEY     VALUE 'Y'.
-       PROCEDURE DIVISION.
+           05 ACCT-ST           PIC 9(02).
+              88 ACCT-EOF       VALUE 10.
+              88 ACCT-SUCCESS   VALUE 00
+                                      97.
+           05 INVALID-KEY       PIC X(01).
+              88 INVL-KEY       VALUE 'Y'.
+           05 ACCT-NAME-O       PIC X(15) VALUE SPACES.
+           05 COUNTER-VARS.
+              07 COUNTER-I      PIC 9(02) VALUE ZEROS.
+              07 COUNTER-O      PIC 9(02) VALUE 1.
+           05 WS-COMMENT-FILLER.
+              07 WS-ID          PIC S9(05) COMP-3.
+              07 WS-FL          PIC X(01) VALUE '-'.
+              07 WS-OPR-P       PIC X(04).
+              07 WS-RC          PIC 9(02) VALUE 00.
+              07 WS-CMT         PIC X(30) VALUE SPACES.
+              07 WS-OPR         PIC X(01).
+              88 VLD-OPR        VALUE  'R'
+                                       'U'
+                                       'W'
+                                       'D'.
+       LINKAGE SECTION.
+       01  LS-SUB-AREA.
+           05 LS-OPR            PIC X(01).
+           05 LS-ID             PIC X(04).
+           05 LS-CMT            PIC X(50).
+       PROCEDURE DIVISION USING LS-SUB-AREA.
       *MAIN LOOOP
        0000-MAIN.
            PERFORM H100-OPEN-FILES.
-           PERFORM H200-PROCESS UNTIL IDX-EOF.
+           PERFORM H200-PROCESS.
            PERFORM H999-PROGRAM-EXIT.
       *OPEN FILES AND CHECK STATUS
        H100-OPEN-FILES.
-           OPEN INPUT ACCT-REC.
-           IF (ACCT-ST NOT = 0) AND (ACCT-ST NOT = 97)
+           OPEN I-O ACCT-REC.
+           IF (NOT ACCT-SUCCESS)
+              STRING
+                  'UNABLE TO OPEN VSAM FILE RETURN CODE: ' ACCT-ST
+                  DELIMITED BY SIZE INTO LS-CMT
               DISPLAY 'UNABLE TO OPEN1 FILE: ' ACCT-ST
               MOVE ACCT-ST TO RETURN-CODE
               PERFORM H999-PROGRAM-EXIT
            END-IF.
-           OPEN INPUT IDX-REC.
-           IF (IDX-ST NOT = 0) AND (IDX-ST NOT = 97)
-              DISPLAY 'UNABLE TO OPEN2 FILE: ' IDX-ST
-              MOVE IDX-ST TO RETURN-CODE
-              PERFORM H999-PROGRAM-EXIT
-           END-IF.
-           OPEN OUTPUT PRINT-LINE.
-           IF (PRT-ST NOT = 0) AND (ACCT-ST NOT = 97)
-              DISPLAY 'UNABLE TO OPEN3 FILE: ' PRT-ST
-              MOVE PRT-ST TO RETURN-CODE
-              PERFORM H999-PROGRAM-EXIT
-           END-IF.
-           READ IDX-REC.
-           IF (IDX-ST NOT = 0) AND (IDX-ST NOT = 97)
-              DISPLAY 'UNABLE TO READ4 FILE: ' IDX-ST
-              MOVE IDX-ST TO RETURN-CODE
-              PERFORM H999-PROGRAM-EXIT
-           END-IF.
-      *    MOVE IDX-ID TO ACCT-ID.
-           COMPUTE ACCT-ID = FUNCTION NUMVAL (IDX-ID).
-           COMPUTE ACCT-CUR = FUNCTION NUMVAL (IDX-CUR).
+           COMPUTE ACCT-ID = FUNCTION NUMVAL (LS-ID).
            READ ACCT-REC
               INVALID KEY MOVE 'Y' TO INVALID-KEY.
-           IF INVALID-KEY NOT = 'Y'
-              IF (ACCT-ST NOT = 0) AND (ACCT-ST NOT = 97)
+           IF NOT INVL-KEY
+              IF (NOT ACCT-SUCCESS)
+                 STRING
+                     'UNABLE TO OPEN VSAM FILE RETURN CODE: ' ACCT-ST
+                     DELIMITED BY SIZE INTO LS-CMT
                 DISPLAY 'UNABLE TO READ5 FILE: ' ACCT-ST
                 MOVE ACCT-ST TO RETURN-CODE
                 PERFORM H999-PROGRAM-EXIT
@@ -100,33 +84,98 @@
        H100-END. EXIT.
       *PROGRAM LOGIC
        H200-PROCESS.
-           INITIALIZE PRINT-REC.
-           IF INVALID-KEY NOT = 'Y'
-              MOVE ACCT-ID TO PRT-ID
-              MOVE ACCT-CUR TO PRT-CUR
-              MOVE ACCT-NAME TO PRT-NAME
-              MOVE ACCT-SURNAME TO PRT-SURNAME
-              WRITE PRINT-REC
+           MOVE LS-OPR TO WS-OPR.
+           INITIALIZE LS-CMT.
+           IF NOT INVL-KEY AND VLD-OPR
+              PERFORM H400-OPR-PRCS
+              MOVE ACCT-ID                  TO WS-ID
+              MOVE 00                       TO WS-RC
+              MOVE 'OPERATION COMPLETED'    TO WS-CMT
            ELSE
-              DISPLAY 'INVALID KEY' IDX-ID
-              INITIALIZE INVALID-KEY
+              IF INVL-KEY
+                 IF WS-OPR = 'W'
+                    PERFORM H450-WRITE-NEW
+                    MOVE ACCT-ID                  TO WS-ID
+                    MOVE 00                       TO WS-RC
+                    MOVE 'REGISTRATION ADDED'     TO WS-CMT
+                 ELSE
+                    MOVE ACCT-ID                  TO WS-ID
+                    MOVE 23                       TO WS-RC
+                    MOVE 'NO RECORDS FOUND'       TO WS-CMT
+                 END-IF
+              ELSE
+                 PERFORM H400-OPR-PRCS
+                 MOVE ACCT-ID                  TO WS-ID
+                 MOVE 01                       TO WS-RC
+                 MOVE 'INVALID OPERATION'      TO WS-CMT 
+              END-IF
            END-IF.
-           READ IDX-REC.
-      *    MOVE IDX-ID TO ACCT-ID.
-           COMPUTE ACCT-ID = FUNCTION NUMVAL (IDX-ID).
-           COMPUTE ACCT-CUR = FUNCTION NUMVAL (IDX-CUR).
-           READ ACCT-REC
-              INVALID KEY MOVE 'Y' TO INVALID-KEY.
+           PERFORM H700-STRING-FOR-COMMENT.
        H200-END. EXIT.
-      *CLOSE I/O FILES
-       H300-CLOSE-FILES.
-           CLOSE ACCT-REC
-                 PRINT-LINE
-                 IDX-REC.
-       H300-END. EXIT.
+      *EVALUATE THE OPERATION
+       H400-OPR-PRCS.
+           EVALUATE WS-OPR
+              WHEN "R"
+                 MOVE 'READ'             TO WS-OPR-P
+                 DISPLAY 'READ DONE -> ' ACCT-FIELDS
+              WHEN "U"
+                 MOVE 'UPDT'             TO WS-OPR-P
+                 INSPECT ACCT-SURNAME REPLACING ALL 'E' BY 'I'
+                 INSPECT ACCT-SURNAME REPLACING ALL 'A' BY 'E'
+                 PERFORM H600-SPACE-REMOVER
+                 DISPLAY 'UPDT DONE -> ' ACCT-FIELDS
+              WHEN "W"
+                 MOVE 'WRIT'             TO WS-OPR-P
+                 MOVE 'MERT MUSA'        TO ACCT-NAME
+                 MOVE 'TEMEL'            TO ACCT-SURNAME
+                 DISPLAY 'WRIT DONE -> ' ACCT-FIELDS
+              WHEN "D"
+                 MOVE 'DELT'             TO WS-OPR-P
+                 DELETE ACCT-REC
+                 END-DELETE
+                 DISPLAY 'DELT DONE -> ' ACCT-FIELDS
+              WHEN OTHER
+                 MOVE 'INVD'             TO WS-OPR-P
+                 DISPLAY 'INVD DONE -> ' ACCT-FIELDS
+           END-EVALUATE.
+           REWRITE ACCT-FIELDS
+           END-REWRITE.
+       H400-END. EXIT.
+      *WRITE NEW RECORD
+       H450-WRITE-NEW.
+           MOVE 'WRIT'             TO WS-OPR-P
+           MOVE 482                TO ACCT-CUR
+           MOVE 'MERT MUSA'        TO ACCT-NAME
+           MOVE 'TEMEL'            TO ACCT-SURNAME
+           MOVE SPACES             TO ACCT-FIELDS (36:12)
+           WRITE ACCT-FIELDS
+           DISPLAY 'WRTN DONE -> ' ACCT-FIELDS.
+       H450-END. EXIT.
+      *SPACE REMOVE
+       H600-SPACE-REMOVER.
+           PERFORM VARYING COUNTER-I FROM 1 BY 1
+              UNTIL COUNTER-I > LENGTH OF  ACCT-NAME
+              IF ACCT-NAME (COUNTER-I:1) = ' '
+                 CONTINUE
+              ELSE
+                 MOVE  ACCT-NAME      (COUNTER-I:1) TO
+                       ACCT-NAME-O    (COUNTER-O:1)
+                 ADD 1 TO COUNTER-O
+              END-IF
+           END-PERFORM.
+           MOVE ACCT-NAME-O     TO ACCT-NAME.
+           MOVE 1               TO COUNTER-O.
+           MOVE SPACES          TO ACCT-NAME-O.
+       H-600-END. EXIT.
+      *STRING HANDLING
+       H700-STRING-FOR-COMMENT.
+           STRING
+                 WS-ID WS-FL WS-OPR-P 'RC:' WS-RC WS-FL WS-CMT 
+                 DELIMITED BY SIZE INTO LS-CMT.
+       H700-END. EXIT.
       *END THE PROGRAM
        H999-PROGRAM-EXIT.
-           PERFORM H300-CLOSE-FILES.
-           STOP RUN.
+           CLOSE ACCT-REC.
+           EXIT PROGRAM.
        H999-END. EXIT.
       *
