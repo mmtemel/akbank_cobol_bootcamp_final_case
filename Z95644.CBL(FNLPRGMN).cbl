@@ -1,6 +1,6 @@
        IDENTIFICATION DIVISION.
       *MAIN PROGRAM
-       PROGRAM-ID.    FNLPRGWN
+       PROGRAM-ID.    FNLPRGMN
        AUTHOR.        Mert Musa TEMEL.
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
@@ -19,7 +19,8 @@
       *PRINT VARS
        FD  PRINT-LINE RECORDING MODE F.
        01  PRINT-REC.
-           05 PRT-CMT           PIC X(50).
+           05 PRT-ID            PIC X(05).
+           05 PRT-CMT           PIC X(45).
       *INTERNAL VARIABLES.
        WORKING-STORAGE SECTION.
        01  WS-WORK-AREA.
@@ -32,8 +33,8 @@
                                       97.
        01  WS-SUB-AREA.
            05 WS-OPR            PIC X(01).
-           05 WS-ID             PIC X(04).
-           05 WS-CMT            PIC X(50).
+           05 WS-ID             PIC X(05).
+           05 WS-CMT            PIC X(45).
        PROCEDURE DIVISION.
       *MAIN LOOOP
        0000-MAIN.
@@ -44,19 +45,19 @@
        H100-OPEN-FILES.
            OPEN INPUT INP-REC.
            IF (NOT INP-SUCCESS)
-              DISPLAY 'UNABLE TO OPEN2 FILE: ' INP-ST
+              DISPLAY 'UNABLE TO INP FILE: ' INP-ST
               MOVE INP-ST TO RETURN-CODE
               PERFORM H999-PROGRAM-EXIT
            END-IF.
            OPEN OUTPUT PRINT-LINE.
            IF (NOT PRT-SUCCESS)
-              DISPLAY 'UNABLE TO OPEN3 FILE: ' PRT-ST
+              DISPLAY 'UNABLE TO PRT FILE: ' PRT-ST
               MOVE PRT-ST TO RETURN-CODE
               PERFORM H999-PROGRAM-EXIT
            END-IF.
            READ INP-REC.
            IF (NOT INP-SUCCESS)
-              DISPLAY 'UNABLE TO READ4 FILE: ' INP-ST
+              DISPLAY 'UNABLE TO READ FILE: ' INP-ST
               MOVE INP-ST TO RETURN-CODE
               PERFORM H999-PROGRAM-EXIT
            END-IF.
@@ -68,8 +69,10 @@
            MOVE INP-ID       TO    WS-ID
            MOVE SPACES       TO    WS-CMT
            CALL 'FNLPRGSB' USING WS-SUB-AREA
+           MOVE INP-ID       TO    PRT-ID
            MOVE WS-CMT       TO    PRT-CMT
            WRITE PRINT-REC.
+           READ INP-REC.
        H200-END. EXIT.
       *CLOSE I/O FILES
        H300-CLOSE-FILES.

@@ -37,21 +37,20 @@
               07 COUNTER-I      PIC 9(02) VALUE ZEROS.
               07 COUNTER-O      PIC 9(02) VALUE 1.
            05 WS-COMMENT-FILLER.
-              07 WS-ID          PIC S9(05) COMP-3.
               07 WS-FL          PIC X(01) VALUE '-'.
               07 WS-OPR-P       PIC X(04).
               07 WS-RC          PIC 9(02) VALUE 00.
               07 WS-CMT         PIC X(30) VALUE SPACES.
               07 WS-OPR         PIC X(01).
-              88 VLD-OPR        VALUE  'R'
-                                       'U'
-                                       'W'
-                                       'D'.
+                 88 VLD-OPR        VALUE  'R'
+                                          'U'
+                                          'W'
+                                          'D'.
        LINKAGE SECTION.
        01  LS-SUB-AREA.
            05 LS-OPR            PIC X(01).
-           05 LS-ID             PIC X(04).
-           05 LS-CMT            PIC X(50).
+           05 LS-ID             PIC X(05).
+           05 LS-CMT            PIC X(45).
        PROCEDURE DIVISION USING LS-SUB-AREA.
       *MAIN LOOOP
        0000-MAIN.
@@ -69,13 +68,14 @@
               MOVE ACCT-ST TO RETURN-CODE
               PERFORM H999-PROGRAM-EXIT
            END-IF.
+           INITIALIZE INVALID-KEY.
            COMPUTE ACCT-ID = FUNCTION NUMVAL (LS-ID).
            READ ACCT-REC
               INVALID KEY MOVE 'Y' TO INVALID-KEY.
            IF NOT INVL-KEY
               IF (NOT ACCT-SUCCESS)
                  STRING
-                     'UNABLE TO OPEN VSAM FILE RETURN CODE: ' ACCT-ST
+                     'UNABLE TO OPEN VSAM AFTER READ CODE: ' ACCT-ST
                      DELIMITED BY SIZE INTO LS-CMT
                 DISPLAY 'UNABLE TO READ5 FILE: ' ACCT-ST
                 MOVE ACCT-ST TO RETURN-CODE
@@ -88,26 +88,23 @@
            INITIALIZE LS-CMT.
            IF NOT INVL-KEY AND VLD-OPR
               PERFORM H400-OPR-PRCS
-              MOVE ACCT-ID                  TO WS-ID
               MOVE 00                       TO WS-RC
               MOVE 'OPERATION COMPLETED'    TO WS-CMT
            ELSE
               IF INVL-KEY
                  IF WS-OPR = 'W'
                     PERFORM H450-WRITE-NEW
-                    MOVE ACCT-ID                  TO WS-ID
                     MOVE 00                       TO WS-RC
                     MOVE 'REGISTRATION ADDED'     TO WS-CMT
                  ELSE
-                    MOVE ACCT-ID                  TO WS-ID
+                    PERFORM H400-OPR-PRCS
                     MOVE 23                       TO WS-RC
                     MOVE 'NO RECORDS FOUND'       TO WS-CMT
                  END-IF
               ELSE
                  PERFORM H400-OPR-PRCS
-                 MOVE ACCT-ID                  TO WS-ID
                  MOVE 01                       TO WS-RC
-                 MOVE 'INVALID OPERATION'      TO WS-CMT 
+                 MOVE 'INVALID OPERATION'      TO WS-CMT
               END-IF
            END-IF.
            PERFORM H700-STRING-FOR-COMMENT.
@@ -158,8 +155,8 @@
               IF ACCT-NAME (COUNTER-I:1) = ' '
                  CONTINUE
               ELSE
-                 MOVE  ACCT-NAME      (COUNTER-I:1) TO
-                       ACCT-NAME-O    (COUNTER-O:1)
+                 MOVE  ACCT-NAME (COUNTER-I:1) TO
+                       ACCT-NAME-O (COUNTER-O:1)
                  ADD 1 TO COUNTER-O
               END-IF
            END-PERFORM.
@@ -170,7 +167,7 @@
       *STRING HANDLING
        H700-STRING-FOR-COMMENT.
            STRING
-                 WS-ID WS-FL WS-OPR-P 'RC:' WS-RC WS-FL WS-CMT 
+                 WS-FL WS-OPR-P WS-FL 'RC:' WS-RC WS-FL WS-CMT
                  DELIMITED BY SIZE INTO LS-CMT.
        H700-END. EXIT.
       *END THE PROGRAM
