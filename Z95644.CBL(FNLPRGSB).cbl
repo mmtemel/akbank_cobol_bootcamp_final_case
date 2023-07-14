@@ -46,18 +46,23 @@
                                           'U'
                                           'W'
                                           'D'.
+      *LINKAGE SECTION VARIABLES
+      *RECEIVED FROM MAIN PROGRAM
        LINKAGE SECTION.
        01  LS-SUB-AREA.
            05 LS-OPR            PIC X(01).
            05 LS-ID             PIC X(05).
            05 LS-CMT            PIC X(45).
+           05 LS-SUB-CALLED     PIC 9(01).
+              88 SUB-CALL-NS    VALUE 00.
+              88 SUB-CALL-SC    VALUE 01.
        PROCEDURE DIVISION USING LS-SUB-AREA.
       *MAIN LOOOP
        0000-MAIN.
            PERFORM H100-OPEN-FILES.
            PERFORM H200-PROCESS.
            PERFORM H999-PROGRAM-EXIT.
-      *OPEN FILES AND CHECK STATUS
+      *OPEN VSAM FILE AND CHECK STATUS
        H100-OPEN-FILES.
            OPEN I-O ACCT-REC.
            IF (NOT ACCT-SUCCESS)
@@ -82,7 +87,11 @@
                 PERFORM H999-PROGRAM-EXIT
            END-IF.
        H100-END. EXIT.
-      *PROGRAM LOGIC
+      *CHECK IF KEY AND OPERATION ARE VALID
+      *IF BOTH OK, PERFORM THE OPERATION
+      *IF INVALID KEY AND 'W' THEN ADD NEW RECORD
+      *IF INVALID KEY THEN OUTPUT 'NO RECORD FOUND'
+      *IF INVALID OPERATION THEN WRITE TO OUTPUT
        H200-PROCESS.
            MOVE LS-OPR TO WS-OPR.
            INITIALIZE LS-CMT.
@@ -109,7 +118,7 @@
            END-IF.
            PERFORM H700-STRING-FOR-COMMENT.
        H200-END. EXIT.
-      *EVALUATE THE OPERATION
+      *EXECUTE THE PROCESS ACCORDING TO LETTER RECEIVED
        H400-OPR-PRCS.
            EVALUATE WS-OPR
               WHEN "R"
@@ -138,7 +147,7 @@
            REWRITE ACCT-FIELDS
            END-REWRITE.
        H400-END. EXIT.
-      *WRITE NEW RECORD
+      *FOR ADDIND NEW RECORD
        H450-WRITE-NEW.
            MOVE 'WRIT'             TO WS-OPR-P
            MOVE 482                TO ACCT-CUR
@@ -148,7 +157,7 @@
            WRITE ACCT-FIELDS
            DISPLAY 'WRTN DONE -> ' ACCT-FIELDS.
        H450-END. EXIT.
-      *SPACE REMOVE
+      *REMOVE SPACES IN THE NAME FIELD
        H600-SPACE-REMOVER.
            PERFORM VARYING COUNTER-I FROM 1 BY 1
               UNTIL COUNTER-I > LENGTH OF  ACCT-NAME
@@ -164,7 +173,7 @@
            MOVE 1               TO COUNTER-O.
            MOVE SPACES          TO ACCT-NAME-O.
        H-600-END. EXIT.
-      *STRING HANDLING
+      *CONCATENATE COMMENT STRING THAT WILL BE SENT TO MAIN
        H700-STRING-FOR-COMMENT.
            STRING
                  WS-FL WS-OPR-P WS-FL 'RC:' WS-RC WS-FL WS-CMT

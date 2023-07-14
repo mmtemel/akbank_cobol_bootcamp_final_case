@@ -11,12 +11,12 @@
                              STATUS       PRT-ST.
        DATA DIVISION.
        FILE SECTION.
-      *INDEX FILE
+      *INPFILE FILE
        FD  INP-REC    RECORDING MODE F.
        01  INP-FIELDS.
            05 INP-OPR           PIC X(01).
            05 INP-ID            PIC X(05).
-      *PRINT VARS
+      *PRTLINE FILE
        FD  PRINT-LINE RECORDING MODE F.
        01  PRINT-REC.
            05 PRT-ID            PIC X(05).
@@ -35,6 +35,9 @@
            05 WS-OPR            PIC X(01).
            05 WS-ID             PIC X(05).
            05 WS-CMT            PIC X(45).
+           05 WS-SUB-CALLED     PIC 9(01).
+              88 SUB-CALL-NS    VALUE 00.
+              88 SUB-CALL-SC    VALUE 01.
        PROCEDURE DIVISION.
       *MAIN LOOOP
        0000-MAIN.
@@ -62,15 +65,17 @@
               PERFORM H999-PROGRAM-EXIT
            END-IF.
        H100-END. EXIT.
-      *PROGRAM LOGIC
+      *SEND INPUT VARIABLES TO THE SUB-PROGRAM
+      *AND WRITE TO OUTPUT WHAT IS RECEIVED FROM SUB-PROGRAM
        H200-PROCESS.
            INITIALIZE PRINT-REC.
-           MOVE INP-OPR      TO    WS-OPR
-           MOVE INP-ID       TO    WS-ID
-           MOVE SPACES       TO    WS-CMT
-           CALL 'FNLPRGSB' USING WS-SUB-AREA
-           MOVE INP-ID       TO    PRT-ID
-           MOVE WS-CMT       TO    PRT-CMT
+           MOVE INP-OPR      TO       WS-OPR
+           MOVE INP-ID       TO       WS-ID
+           MOVE SPACES       TO       WS-CMT
+           CALL 'FNLPRGSB'   USING    WS-SUB-AREA
+           SET SUB-CALL-SC   TO       TRUE
+           MOVE INP-ID       TO       PRT-ID
+           MOVE WS-CMT       TO       PRT-CMT
            WRITE PRINT-REC.
            READ INP-REC.
        H200-END. EXIT.
